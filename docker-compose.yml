@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres
+    restart: on-failure:5
+    environment:
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_USER: db_user
+      POSTGRES_DB: my_db
+    volumes:
+      - test_vol:/var/lib/postgresql/data
+      - ./pw.sql:/docker-entrypoint-initdb.d/pw.sql
+    ports:
+      - 5432:5432
+volumes:
+  test_vol:
