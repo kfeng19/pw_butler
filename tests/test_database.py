@@ -1,2 +1,2 @@
-def test_1(obtain_db):
+def test_1(populate_db):
     pass

@@ -1,6 +1,8 @@
 import enum
 import os.path
 from configparser import ConfigParser
+from abc import ABC
+import time
 
 import sqlalchemy as sa
 from sqlalchemy import MetaData
@@ -39,10 +41,25 @@ def config_db(mode: DBCat, host: str, db_name: str, user: str, password: str, po
         config.write(f)
 
 
+class DatabaseApplication(ABC):
+    """Base class for anything that needs to communicate with the database"""
+    def __init__(self, category: DBCat):
+        self._database = Database(category)
+
+    def __enter__(self):
+        self._database.reflect()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._database.close()
+
+
 class Database:
     """Database class
     :param category: whether this instance is for production or testing
     """
+    max_retry = 5
+
     def __init__(self, category: DBCat):
         if not os.path.isfile(DB_CONF_PATH):
             raise FileNotFoundError(f"Initialize DB config first!")
@@ -68,17 +85,20 @@ class Database:
         """Destructor"""
         self.close()
 
-    def reflect(self) -> bool:
+    def reflect(self) -> None:
         """Reflect tables from our database"""
         meta = MetaData()
-        try:
-            meta.reflect(bind=self._engine)
-        except OperationalError:
-            print("Reflecting failed. Database may not be ready yet. Please try again.")
-            return False
+        for k in range(self.max_retry):
+            try:
+                meta.reflect(bind=self._engine)
+            except OperationalError as e:
+                if k == self.max_retry - 1:
+                    raise e
+                print("Reflecting failed. Database may not be ready yet. Retrying...")
+                time.sleep(1)
         if CRED_TABLE not in meta.tables:
             raise KeyError(f"Didn't find {CRED_TABLE} in database!")
         self._cred_table = meta.tables[CRED_TABLE]
-        return True
 
-
+    def get_salt(self) -> bytes:
+        pass
