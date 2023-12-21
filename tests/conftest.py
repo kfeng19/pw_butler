@@ -28,7 +28,7 @@ def config(docker_ip, docker_services):
 def obtain_db(config):
     db = Database(DBCat.Test)
     for k in range(5):
-        if k == 5:
+        if k == 4:
             raise RuntimeError("Couldn't connect to database within max retries.")
         if db.reflect():
             break
@@ -39,7 +39,7 @@ def obtain_db(config):
 
 
 # Ref: https://cryptography.io/en/latest/fernet/#using-passwords-with-fernet
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def prepare_data():
     salt = os.urandom(16)
     pw = b"user_password"
@@ -58,7 +58,7 @@ def prepare_data():
     return salt, uname_token, pw_token
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session", autouse=True)
 def populate_db(obtain_db, prepare_data):
     stmt = (
         insert(obtain_db._cred_table).
