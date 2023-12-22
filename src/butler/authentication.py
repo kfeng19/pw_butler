@@ -1,13 +1,20 @@
 import os
 from butler.util import hash_pw, derive_key
 import pickle
+import warnings
 
 
 AUTH_PATH = os.path.expanduser('~/.pw_butler/auth.bin')
 
 
 def initialize(pw: bytes, auth_file=AUTH_PATH) -> None:
-    """Initialize the authentication"""
+    """Initialize the authentication file"""
+    if os.path.isfile(auth_file):
+        warnings.warn("Authentication file already exists", RuntimeWarning)
+        go = input("Proceed? (y/n)")
+        if go.lower() != 'y':
+            print("Canceling")
+            return
     salt, pw_hash = hash_pw(pw)
     with open(auth_file, 'wb') as f:
         pickle.dump((salt, pw_hash), f)
