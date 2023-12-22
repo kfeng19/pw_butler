@@ -4,12 +4,12 @@ A password manager on local host.
 
 Usage
 ---
-The first step is to have the database ready. 
+The first step is to have the database ready.
 The easiest way to achieve this is through docker-compose:
 ```commandline
 docker-compose up
 ```
-This will create a persistent database. 
+This will create a persistent database.
 When you are done with the tool, simply stop everything with
 ```
 docker-compose down

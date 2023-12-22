@@ -8,11 +8,7 @@ import os
 
 def derive_key(salt: bytes, pw: bytes) -> bytes:
     """Derive encryption key using a password and salt"""
-    kdf = PBKDF2HMAC(
-        algorithm=hashes.SHA256(),
-        length=32,
-        salt=salt,
-        iterations=480000)
+    kdf = PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=salt, iterations=480000)
     return base64.urlsafe_b64encode(kdf.derive(pw))
 
 
@@ -41,4 +37,3 @@ def decrypt_with_salt(root_pw: bytes, salt: bytes, token: bytes) -> bytes:
     key = derive_key(salt, root_pw)
     f = Fernet(key)
     return f.decrypt(token)
-

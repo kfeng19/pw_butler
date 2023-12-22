@@ -17,7 +17,7 @@ def config(docker_ip, docker_services):
         "my_db",
         "db_user",
         "mypassword",
-        docker_services.port_for("db", 5432)
+        docker_services.port_for("db", 5432),
     )
 
 
@@ -41,14 +41,11 @@ def prepare_data():
 
 @pytest.fixture(scope="session")
 def populate_db(obtain_db, prepare_data):
-    stmt = (
-        insert(obtain_db._cred_table).
-        values(
-            app_site="Times",
-            salt=prepare_data[0],
-            username=prepare_data[1],
-            password=prepare_data[2]
-        )
+    stmt = insert(obtain_db._cred_table).values(
+        app_site="Times",
+        salt=prepare_data[0],
+        username=prepare_data[1],
+        password=prepare_data[2],
     )
     with obtain_db.Session() as sess:
         with sess.begin():

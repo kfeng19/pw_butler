@@ -1,5 +1,6 @@
 import enum
 import os.path
+import typing
 from configparser import ConfigParser
 from abc import ABC
 import time
@@ -9,8 +10,9 @@ from sqlalchemy import MetaData
 from sqlalchemy.engine import URL
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import sessionmaker
+from typing import Any
 
-DB_CONF_PATH = os.path.expanduser('~/.pw_butler/db.ini')
+DB_CONF_PATH = os.path.expanduser("~/.pw_butler/db.ini")
 CRED_TABLE = "credential"
 
 HOST_KEY = "host"
@@ -25,7 +27,9 @@ class DBCat(enum.Enum):
     Prod = 2
 
 
-def config_db(mode: DBCat, host: str, db_name: str, user: str, password: str, port=5432) -> None:
+def config_db(
+    mode: DBCat, host: str, db_name: str, user: str, password: str, port=5432
+) -> None:
     """Initialize the DB config file"""
     config = ConfigParser()
     if os.path.isfile(DB_CONF_PATH):
@@ -35,14 +39,15 @@ def config_db(mode: DBCat, host: str, db_name: str, user: str, password: str, po
         DB_NAME_KEY: db_name,
         DB_USER_KEY: user,
         DB_PW_KEY: password,
-        DB_PORT_KEY: port
+        DB_PORT_KEY: port,
     }
-    with open(DB_CONF_PATH, 'w') as f:
+    with open(DB_CONF_PATH, "w") as f:
         config.write(f)
 
 
 class DatabaseApplication(ABC):
     """Base class for anything that needs to communicate with the database"""
+
     def __init__(self, category: DBCat):
         self._database = Database(category)
 
@@ -58,11 +63,12 @@ class Database:
     """Database class
     :param category: whether this instance is for production or testing
     """
+
     max_retry = 5
 
     def __init__(self, category: DBCat):
         if not os.path.isfile(DB_CONF_PATH):
-            raise FileNotFoundError(f"Initialize DB config first!")
+            raise FileNotFoundError("Initialize DB config first!")
         parser = ConfigParser()
         parser.read(DB_CONF_PATH)
         url = URL.create(
@@ -71,11 +77,13 @@ class Database:
             database=parser.get(category.name, DB_NAME_KEY),
             username=parser.get(category.name, DB_USER_KEY),
             password=parser.get(category.name, DB_PW_KEY),
-            port=parser.getint(category.name, DB_PORT_KEY)
+            port=parser.getint(category.name, DB_PORT_KEY),
         )
         self._engine = sa.create_engine(url)  # An engine for connection
-        self.Session = sessionmaker(self._engine)  # A convenience session factory for production (NOT for testing)
-        self._cred_table = None  # Placeholder for our credential table
+        self.Session = sessionmaker(
+            self._engine
+        )  # A convenience session factory for production (NOT for testing)
+        self._cred_table: Any = None  # Placeholder for our credential table
 
     def close(self):
         """Close connections"""
@@ -100,5 +108,6 @@ class Database:
             raise KeyError(f"Didn't find {CRED_TABLE} in database!")
         self._cred_table = meta.tables[CRED_TABLE]
 
+    @typing.no_type_check
     def get_salt(self) -> bytes:
         pass
