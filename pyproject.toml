@@ -31,6 +31,9 @@ Documentation = "https://github.com/unknown/pw-butler#readme"
 Issues = "https://github.com/unknown/pw-butler/issues"
 Source = "https://github.com/unknown/pw-butler"
 
+[project.scripts]
+butler = "butler.ui:cli"
+
 [tool.hatch.version]
 path = "src/butler/__init__.py"
 

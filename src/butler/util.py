@@ -16,6 +16,12 @@ def derive_key(salt: bytes, pw: bytes) -> bytes:
     return base64.urlsafe_b64encode(kdf.derive(pw))
 
 
+def hash_pw(pw: bytes) -> tuple:
+    """Convenience function to hash a password"""
+    salt = os.urandom(16)
+    return salt, derive_key(salt, pw)
+
+
 def encrypt_wrapper(root_pw: bytes, secret: bytes) -> tuple:
     """Symmetrically encrypt a secret and return the token and salt"""
     salt = os.urandom(16)
