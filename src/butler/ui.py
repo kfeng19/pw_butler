@@ -1,6 +1,9 @@
 import click
 
 from butler.authentication import initialize, authenticate
+from butler.app import Butler
+
+from butler.database import DBCat
 
 
 @click.group()
@@ -36,7 +39,11 @@ def init(password):
 @pw_option
 def ls(password):
     if authenticate(password):
-        print("Hooray!")
+        print("Authenticated")
+        with Butler(DBCat.Prod, password) as app:
+            all_sites = app.retrieve_all()
+            for site in all_sites:
+                print(site)
     else:
         print("Wrong password :(")
 

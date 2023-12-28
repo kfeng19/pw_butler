@@ -1,16 +1,15 @@
 import enum
 import os.path
-import typing
-from configparser import ConfigParser
-from abc import ABC
 import time
+from abc import ABC
+from configparser import ConfigParser
+from typing import Any, Union
 
 import sqlalchemy as sa
-from sqlalchemy import MetaData
+from sqlalchemy import MetaData, select, Connection
 from sqlalchemy.engine import URL
 from sqlalchemy.exc import OperationalError
-from sqlalchemy.orm import sessionmaker
-from typing import Any
+from sqlalchemy.orm import sessionmaker, Session
 
 DB_CONF_PATH = os.path.expanduser("~/.pw_butler/db.ini")
 CRED_TABLE = "credential"
@@ -79,15 +78,15 @@ class Database:
             password=parser.get(category.name, DB_PW_KEY),
             port=parser.getint(category.name, DB_PORT_KEY),
         )
-        self._engine = sa.create_engine(url)  # An engine for connection
+        self.engine = sa.create_engine(url)  # An engine for connection
         self.Session = sessionmaker(
-            self._engine
+            self.engine
         )  # A convenience session factory for production (NOT for testing)
         self._cred_table: Any = None  # Placeholder for our credential table
 
     def close(self):
         """Close connections"""
-        self._engine.dispose()
+        self.engine.dispose()
 
     def __del__(self):
         """Destructor"""
@@ -98,7 +97,7 @@ class Database:
         meta = MetaData()
         for k in range(self.max_retry):
             try:
-                meta.reflect(bind=self._engine)
+                meta.reflect(bind=self.engine)
             except OperationalError as e:
                 if k == self.max_retry - 1:
                     raise e
@@ -108,6 +107,19 @@ class Database:
             raise KeyError(f"Didn't find {CRED_TABLE} in database!")
         self._cred_table = meta.tables[CRED_TABLE]
 
-    @typing.no_type_check
-    def get_salt(self) -> bytes:
-        pass
+    def get_salt(self, conn: Union[Session, Connection], site_token: str) -> bytes:
+        """Get the salt for a specific site token"""
+        stmt = select(self._cred_table.c.salt).where(
+            self._cred_table.c.app_site == site_token
+        )
+        rows = conn.execute(stmt).all()
+        n = len(rows)
+        if n != 1:
+            raise ValueError(f"{n} rows matched when getting salt!")
+        return rows[0][0]
+
+    def get_all_sites(self, conn: Union[Session, Connection]) -> list:
+        """Obtain all site tokens in database"""
+        stmt = select(self._cred_table.c.app_site)
+        rows = conn.execute(stmt).all()
+        return [row[0] for row in rows]
