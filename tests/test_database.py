@@ -1,7 +1,10 @@
 import pytest
 from pytest import raises
 from sqlalchemy.orm import Session
+
 from butler.database import SALT_KEY, SITE_KEY
+
+from .conftest import random_data
 
 
 # Bind session to an external connection
@@ -27,3 +30,10 @@ def test_get_all_sites(prepare_data, populate_db, session):
 def test_add_duplicate(prepare_data, populate_db, session):
     with raises(ValueError, match="exists"):
         populate_db.add(session, prepare_data)
+
+
+def test_add(populate_db, session):
+    data = random_data()
+    populate_db.add(session, data)
+    salt = populate_db.get_salt(session, data[SITE_KEY])
+    assert salt == data[SALT_KEY]
