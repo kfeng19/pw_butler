@@ -6,7 +6,7 @@ from configparser import ConfigParser
 from typing import Any, Union
 
 import sqlalchemy as sa
-from sqlalchemy import MetaData, select, Connection
+from sqlalchemy import MetaData, select, Connection, insert
 from sqlalchemy.engine import URL
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import sessionmaker, Session
@@ -19,6 +19,11 @@ DB_NAME_KEY = "db_name"
 DB_USER_KEY = "user"
 DB_PW_KEY = "password"
 DB_PORT_KEY = "port"
+
+SITE_KEY = "app_site"
+SALT_KEY = "salt"
+UNAME_KEY = "username"
+PW_KEY = "password"
 
 
 class DBCat(enum.Enum):
@@ -123,3 +128,17 @@ class Database:
         stmt = select(self._cred_table.c.app_site)
         rows = conn.execute(stmt).all()
         return [row[0] for row in rows]
+
+    def add(self, conn: Union[Session, Connection], entry: dict):
+        """Add one entry"""
+        query = (
+            select(self._cred_table)
+            .where(entry[SITE_KEY] == self._cred_table.c.app_site)
+            .where(entry[UNAME_KEY] == self._cred_table.c.username)
+            .where(entry[PW_KEY] == self._cred_table.c.password)
+        )
+        if len(conn.execute(query).all()):
+            raise ValueError("Entry already exists!")
+        stmt = insert(self._cred_table).values(**entry)
+        conn.execute(stmt)
+        conn.commit()
