@@ -1,8 +1,9 @@
 import pytest
-from .conftest import ROOT_PW, SITE_NAME
 
 from butler.app import Butler
 from butler.database import DBCat
+
+from .conftest import ROOT_PW, SITE_NAME
 
 
 @pytest.fixture(scope="module")
@@ -11,6 +12,6 @@ def get_butler(populate_db):
         yield app
 
 
-def test_retrieve_all(get_butler):
+def test_retrieve_all(get_butler, prepare_data):
     all_sites = get_butler.retrieve_all()
     assert all_sites == [SITE_NAME]

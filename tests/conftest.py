@@ -1,16 +1,18 @@
 import os
+import random
+import string
 
 import pytest
 from sqlalchemy import insert
 
 from butler.database import (
-    config_db,
-    DBCat,
-    Database,
-    SALT_KEY,
-    UNAME_KEY,
-    SITE_KEY,
     PW_KEY,
+    SALT_KEY,
+    SITE_KEY,
+    UNAME_KEY,
+    Database,
+    DBCat,
+    config_db,
 )
 from butler.util import encrypt_with_salt
 
@@ -38,12 +40,12 @@ def obtain_db(config):
     db.close()
 
 
-@pytest.fixture(scope="session")
-def prepare_data():
+def random_data(site=None):
     salt = os.urandom(16)
-    pw = b"user_password"
-    username = b"user_name"
-    site = SITE_NAME
+    pw = "".join(random.choices(string.ascii_letters, k=8)).encode()
+    username = "".join(random.choices(string.ascii_letters, k=6)).encode()
+    if site is None:
+        site = "".join(random.choices(string.ascii_letters, k=5)).encode()
     pw_token = encrypt_with_salt(ROOT_PW, salt, pw)
     uname_token = encrypt_with_salt(ROOT_PW, salt, username)
     site_token = encrypt_with_salt(ROOT_PW, salt, site)
@@ -53,6 +55,11 @@ def prepare_data():
         PW_KEY: pw_token.decode(),
         SITE_KEY: site_token.decode(),
     }
+
+
+@pytest.fixture(scope="session")
+def prepare_data():
+    return random_data(SITE_NAME)
 
 
 @pytest.fixture(scope="session")

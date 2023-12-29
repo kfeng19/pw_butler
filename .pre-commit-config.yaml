@@ -26,3 +26,9 @@ repos:
         additional_dependencies:
             - sqlalchemy
             - cryptography
+-   repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+        - id: isort
+          name: isort (python)
+          args: ["--profile", "black"]
