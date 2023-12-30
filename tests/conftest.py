@@ -1,20 +1,13 @@
 import os
 import random
 import string
+from tempfile import TemporaryDirectory
 
 import pytest
 from sqlalchemy import insert
 from sqlalchemy.orm import Session
 
-from butler.database import (
-    PW_KEY,
-    SALT_KEY,
-    SITE_KEY,
-    UNAME_KEY,
-    Database,
-    DBCat,
-    config_db,
-)
+from butler.database import PW_KEY, SALT_KEY, SITE_KEY, UNAME_KEY, Database, config_db
 from butler.util import encrypt_with_salt
 
 ROOT_PW = b"root_password"
@@ -22,20 +15,24 @@ SITE_NAME = "times"
 
 
 @pytest.fixture(scope="session")
-def config(docker_ip, docker_services):
-    config_db(
-        DBCat.Test,
-        docker_ip,
-        "my_db",
-        "db_user",
-        "mypassword",
-        docker_services.port_for("db", 5432),
-    )
+def get_db_config(docker_ip, docker_services):
+    with TemporaryDirectory() as _dir:
+        if config_db(
+            db_name="my_db",
+            host=docker_ip,
+            user="db_user",
+            password="mypassword",
+            port=docker_services.port_for("db", 5432),
+            config_dir=_dir,
+        ):
+            yield _dir
+        else:
+            raise RuntimeError("Failed to config db.")
 
 
 @pytest.fixture(scope="session")
-def obtain_db(config):
-    db = Database(DBCat.Test)
+def obtain_db(get_db_config):
+    db = Database(config_dir=get_db_config)
     db.reflect()
     yield db
     db.close()

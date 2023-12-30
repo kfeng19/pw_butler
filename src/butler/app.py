@@ -1,23 +1,23 @@
 import typing
 
 from butler.database import (
+    DB_CONF_PATH,
     PW_KEY,
     SALT_KEY,
     SITE_KEY,
     UNAME_KEY,
     DatabaseApplication,
-    DBCat,
 )
 from butler.util import encrypt_with_salt, encrypt_wrapper
 
 
 class Butler(DatabaseApplication):
     """Main application class
-    :param cat: testing or production type
+    :param db_dir: testing or production type
     """
 
-    def __init__(self, cat: DBCat, password):
-        super().__init__(cat)
+    def __init__(self, password, db_dir=DB_CONF_PATH):
+        super().__init__(db_dir)
         self._root_pw = password
 
     @typing.no_type_check

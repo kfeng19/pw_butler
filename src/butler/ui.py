@@ -6,7 +6,6 @@ import click
 
 from butler.app import Butler
 from butler.authentication import initialize, verify_password
-from butler.database import DBCat
 
 
 def authenticate(func):
@@ -44,7 +43,7 @@ def init():
 @authenticate
 def ls(password):
     """List all apps / sites"""
-    with Butler(DBCat.Prod, password) as app:
+    with Butler(password) as app:
         all_sites = app.retrieve_all()
         for site in all_sites:
             print(site)

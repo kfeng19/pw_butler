@@ -2,14 +2,13 @@ import pytest
 from sqlalchemy import select
 
 from butler.app import Butler
-from butler.database import DBCat
 
 from .conftest import ROOT_PW, SITE_NAME, random_raw
 
 
 @pytest.fixture(scope="module")
-def get_butler(populate_db):
-    with Butler(DBCat.Test, ROOT_PW) as app:
+def get_butler(populate_db, get_db_config):
+    with Butler(ROOT_PW, db_dir=get_db_config) as app:
         yield app
 
 

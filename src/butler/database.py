@@ -1,9 +1,11 @@
-import enum
-import os.path
+import logging
+import os
 import time
+import warnings
 from abc import ABC
 from configparser import ConfigParser
 from contextlib import contextmanager
+from pathlib import Path
 from typing import Any, Union
 
 import sqlalchemy as sa
@@ -12,7 +14,7 @@ from sqlalchemy.engine import URL
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session, sessionmaker
 
-DB_CONF_PATH = os.path.expanduser("~/.pw_butler/db.ini")
+DB_CONF_PATH = Path(os.path.expanduser("~/.pw_butler/db"))
 CRED_TABLE = "credential"
 
 HOST_KEY = "host"
@@ -26,35 +28,48 @@ SALT_KEY = "salt"
 UNAME_KEY = "username"
 PW_KEY = "password"
 
-
-class DBCat(enum.Enum):
-    Test = 1
-    Prod = 2
+INI_NAME = ".ini"
+INI_SECTION = "DEFAULT"
 
 
+# Docker compose needs to load secrets from individual files. Might need to change config file format
 def config_db(
-    mode: DBCat, host: str, db_name: str, user: str, password: str, port=5432
-) -> None:
+    db_name: str,
+    user: str,
+    password: str,
+    host: str = "localhost",
+    port: int = 5432,
+    config_dir: str | os.PathLike = DB_CONF_PATH,
+) -> bool:
     """Initialize the DB config file"""
+    if len(os.listdir(config_dir)) > 0:
+        warnings.warn("Database config exists!")
+        user_input = input("Overwrite? (y/n): ")
+        if user_input.lower() != "y":
+            logging.info("Canceled")
+            return False
     config = ConfigParser()
-    if os.path.isfile(DB_CONF_PATH):
-        config.read(DB_CONF_PATH)
-    config[mode.name] = {
+    config[INI_SECTION] = {
         HOST_KEY: host,
-        DB_NAME_KEY: db_name,
-        DB_USER_KEY: user,
-        DB_PW_KEY: password,
-        DB_PORT_KEY: port,
+        DB_PORT_KEY: str(port),
     }
-    with open(DB_CONF_PATH, "w") as f:
+    _dir = Path(config_dir)
+    with open(_dir / INI_NAME, "w") as f:
         config.write(f)
+    with open(_dir / DB_NAME_KEY, "w") as f:
+        f.write(db_name)
+    with open(_dir / DB_USER_KEY, "w") as f:
+        f.write(user)
+    with open(_dir / DB_PW_KEY, "w") as f:
+        f.write(password)
+    return True
 
 
 class DatabaseApplication(ABC):
     """Base class for anything that needs to communicate with the database"""
 
-    def __init__(self, category: DBCat):
-        self._database = Database(category)
+    def __init__(self, config_dir=DB_CONF_PATH):
+        self._database = Database(config_dir)
 
     def __enter__(self):
         self._database.reflect()
@@ -87,22 +102,25 @@ class Database:
 
     max_retry = 5
 
-    def __init__(self, category: DBCat):
-        if not os.path.isfile(DB_CONF_PATH):
-            raise FileNotFoundError("Initialize DB config first!")
+    def __init__(self, config_dir: str | os.PathLike = DB_CONF_PATH):
+        if not os.path.isdir(config_dir):
+            raise NotADirectoryError("Initialize DB config first!")
         parser = ConfigParser()
-        parser.read(DB_CONF_PATH)
-        if category.name not in parser:
-            raise KeyError(
-                f"{category.name} not found in DB config. Please config first."
-            )
+        _dir = Path(config_dir)
+        parser.read(_dir / INI_NAME)
+        with open(_dir / DB_NAME_KEY, "r") as f:
+            db_name = f.read()
+        with open(_dir / DB_USER_KEY, "r") as f:
+            db_user = f.read()
+        with open(_dir / DB_PW_KEY, "r") as f:
+            db_pw = f.read()
         url = URL.create(
             drivername="postgresql+psycopg",
-            host=parser.get(category.name, HOST_KEY),
-            database=parser.get(category.name, DB_NAME_KEY),
-            username=parser.get(category.name, DB_USER_KEY),
-            password=parser.get(category.name, DB_PW_KEY),
-            port=parser.getint(category.name, DB_PORT_KEY),
+            host=parser.get(INI_SECTION, HOST_KEY),
+            port=parser.getint(INI_SECTION, DB_PORT_KEY),
+            database=db_name,
+            username=db_user,
+            password=db_pw,
         )
         self.engine = sa.create_engine(url)  # An engine for connection
         self.Session = sessionmaker(
