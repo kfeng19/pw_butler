@@ -1,21 +1,27 @@
+import functools
 import logging
 from getpass import getpass
 
 import click
 
 from butler.app import Butler
-from butler.authentication import authenticate, initialize
+from butler.authentication import initialize, verify_password
 from butler.database import DBCat
 
 
-def request_pw():
-    """Request and authenticate a password"""
-    password = getpass("Please enter root password: ").encode()
-    if not authenticate(password):
-        logging.error("Wrong password :(")
-        return None
-    logging.info("Authenticated")
-    return password
+def authenticate(func):
+    """A decorator to request and authenticate a password"""
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        password = getpass("Please enter root password: ").encode()
+        if verify_password(password):
+            logging.info("Authenticated")
+            return func(password, *args, **kwargs)
+        else:
+            logging.error("Wrong password :(")
+
+    return wrapper
 
 
 @click.group()
@@ -35,14 +41,13 @@ def init():
 
 
 @click.command()
-def ls():
+@authenticate
+def ls(password):
     """List all apps / sites"""
-    password = request_pw()
-    if password is not None:
-        with Butler(DBCat.Prod, password) as app:
-            all_sites = app.retrieve_all()
-            for site in all_sites:
-                print(site)
+    with Butler(DBCat.Prod, password) as app:
+        all_sites = app.retrieve_all()
+        for site in all_sites:
+            print(site)
 
 
 cli.add_command(init)

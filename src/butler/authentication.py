@@ -1,8 +1,8 @@
 import os
-from butler.util import hash_pw, derive_key
 import pickle
 import warnings
 
+from butler.util import derive_key, hash_pw
 
 AUTH_PATH = os.path.expanduser("~/.pw_butler/auth.bin")
 
@@ -20,7 +20,7 @@ def initialize(pw: bytes, auth_file=AUTH_PATH) -> None:
         pickle.dump((salt, pw_hash), f)
 
 
-def authenticate(pw: bytes, auth_file=AUTH_PATH) -> bool:
+def verify_password(pw: bytes, auth_file=AUTH_PATH) -> bool:
     """Authenticate given password"""
     if not os.path.isfile(auth_file):
         raise FileNotFoundError("Please initialize authentication first!")
