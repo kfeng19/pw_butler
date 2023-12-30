@@ -92,6 +92,10 @@ class Database:
             raise FileNotFoundError("Initialize DB config first!")
         parser = ConfigParser()
         parser.read(DB_CONF_PATH)
+        if category.name not in parser:
+            raise KeyError(
+                f"{category.name} not found in DB config. Please config first."
+            )
         url = URL.create(
             drivername="postgresql+psycopg",
             host=parser.get(category.name, HOST_KEY),
@@ -112,7 +116,8 @@ class Database:
 
     def __del__(self):
         """Destructor"""
-        self.close()
+        if hasattr(self, "engine"):
+            self.close()
 
     def reflect(self) -> None:
         """Reflect tables from our database"""
