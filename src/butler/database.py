@@ -55,12 +55,16 @@ def config_db(
     _dir = Path(config_dir)
     with open(_dir / INI_NAME, "w") as f:
         config.write(f)
+    os.chmod(_dir / INI_NAME, 0o640)
     with open(_dir / DB_NAME_KEY, "w") as f:
         f.write(db_name)
+    os.chmod(_dir / DB_NAME_KEY, 0o640)
     with open(_dir / DB_USER_KEY, "w") as f:
         f.write(user)
+    os.chmod(_dir / DB_USER_KEY, 0o640)
     with open(_dir / DB_PW_KEY, "w") as f:
         f.write(password)
+    os.chmod(_dir / DB_PW_KEY, 0o640)
     return True
 
 
