@@ -8,32 +8,25 @@ from butler.authentication import authenticate, initialize
 from butler.database import DBCat
 
 
+def request_pw():
+    """Request and authenticate a password"""
+    password = getpass("Please enter root password: ").encode()
+    if not authenticate(password):
+        logging.error("Wrong password :(")
+        return None
+    logging.info("Authenticated")
+    return password
+
+
 @click.group()
 def cli():
     pass
 
 
-def str2bytes(ctx, param, value):
-    if isinstance(value, str):
-        return str.encode(value)
-    else:
-        return value
-
-
-def pw_option(func):
-    return click.option(
-        "--password",
-        hide_input=True,
-        prompt="Your root password",
-        callback=str2bytes,
-        help="This is used for secret encryption.",
-    )(func)
-
-
 @click.command()
-@pw_option
-def init(password):
-    """Initialize a root password for authentication"""
+def init():
+    """Initialize a root password for authentication and encryption"""
+    password = getpass("Please enter root password: ").encode()
     pw2 = getpass(prompt="Please type your password again: ").encode()
     if password != pw2:
         logging.error("Passwords don't match!")
@@ -42,16 +35,14 @@ def init(password):
 
 
 @click.command()
-@pw_option
-def ls(password):
-    if authenticate(password):
-        print("Authenticated")
+def ls():
+    """List all apps / sites"""
+    password = request_pw()
+    if password is not None:
         with Butler(DBCat.Prod, password) as app:
             all_sites = app.retrieve_all()
             for site in all_sites:
                 print(site)
-    else:
-        print("Wrong password :(")
 
 
 cli.add_command(init)
