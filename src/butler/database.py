@@ -100,7 +100,7 @@ class DatabaseApplication(ABC):
 
 class Database:
     """Database class
-    :param category: whether this instance is for production or testing
+    :param config_dir: location to store database config
     """
 
     max_retry = 5

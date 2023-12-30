@@ -14,6 +14,7 @@ from butler.util import encrypt_with_salt, encrypt_wrapper
 
 class Butler(DatabaseApplication):
     """Main application class
+    :param password: root password
     :param db_dir: testing or production type
     """
 
