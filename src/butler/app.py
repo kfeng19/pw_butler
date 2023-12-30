@@ -1,3 +1,4 @@
+import logging
 import typing
 
 from butler.database import (
@@ -44,3 +45,4 @@ class Butler(DatabaseApplication):
                     PW_KEY: pw_token.decode(),
                 },
             )
+        logging.info("Entry added.")

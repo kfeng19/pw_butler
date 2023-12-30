@@ -32,7 +32,6 @@ INI_NAME = ".ini"
 INI_SECTION = "DEFAULT"
 
 
-# Docker compose needs to load secrets from individual files. Might need to change config file format
 def config_db(
     db_name: str,
     user: str,

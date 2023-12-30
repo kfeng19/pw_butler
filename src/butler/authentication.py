@@ -1,3 +1,4 @@
+import logging
 import os
 import pickle
 import warnings
@@ -18,6 +19,7 @@ def initialize(pw: bytes, auth_file=AUTH_PATH) -> None:
     salt, pw_hash = hash_pw(pw)
     with open(auth_file, "wb") as f:
         pickle.dump((salt, pw_hash), f)
+    logging.info("Root password initialized.")
 
 
 def verify_password(pw: bytes, auth_file=AUTH_PATH) -> bool:
