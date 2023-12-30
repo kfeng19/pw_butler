@@ -4,6 +4,7 @@ import string
 
 import pytest
 from sqlalchemy import insert
+from sqlalchemy.orm import Session
 
 from butler.database import (
     PW_KEY,
@@ -17,7 +18,7 @@ from butler.database import (
 from butler.util import encrypt_with_salt
 
 ROOT_PW = b"root_password"
-SITE_NAME = b"times"
+SITE_NAME = "times"
 
 
 @pytest.fixture(scope="session")
@@ -40,20 +41,25 @@ def obtain_db(config):
     db.close()
 
 
+def random_raw():
+    pw = "".join(random.choices(string.ascii_letters, k=8))
+    username = "".join(random.choices(string.ascii_letters, k=6))
+    site = "".join(random.choices(string.ascii_letters, k=5))
+    return site, username, pw
+
+
 def random_data(site=None):
+    raw_site, username, pw = random_raw()
     salt = os.urandom(16)
-    pw = "".join(random.choices(string.ascii_letters, k=8)).encode()
-    username = "".join(random.choices(string.ascii_letters, k=6)).encode()
     if site is None:
-        site = "".join(random.choices(string.ascii_letters, k=5)).encode()
-    pw_token = encrypt_with_salt(ROOT_PW, salt, pw)
-    uname_token = encrypt_with_salt(ROOT_PW, salt, username)
-    site_token = encrypt_with_salt(ROOT_PW, salt, site)
+        site = raw_site
+    pw_token = encrypt_with_salt(ROOT_PW, salt, pw.encode())
+    uname_token = encrypt_with_salt(ROOT_PW, salt, username.encode())
     return {
         SALT_KEY: salt,
         UNAME_KEY: uname_token.decode(),
         PW_KEY: pw_token.decode(),
-        SITE_KEY: site_token.decode(),
+        SITE_KEY: site,
     }
 
 
@@ -69,3 +75,13 @@ def populate_db(obtain_db, prepare_data):
         with sess.begin():
             sess.execute(stmt)
     return obtain_db
+
+
+# Bind session to an external connection
+# See https://docs.sqlalchemy.org/en/20/orm/session_transaction.html#joining-a-session-into-an-external-transaction-such-as-for-test-suites
+@pytest.fixture
+def get_session(obtain_db):
+    with obtain_db.engine.connect() as conn:
+        conn.begin()
+        with Session(bind=conn) as sess:
+            yield sess

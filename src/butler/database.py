@@ -3,13 +3,14 @@ import os.path
 import time
 from abc import ABC
 from configparser import ConfigParser
+from contextlib import contextmanager
 from typing import Any, Union
 
 import sqlalchemy as sa
-from sqlalchemy import MetaData, select, Connection, insert
+from sqlalchemy import Connection, MetaData, insert, select
 from sqlalchemy.engine import URL
 from sqlalchemy.exc import OperationalError
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session, sessionmaker
 
 DB_CONF_PATH = os.path.expanduser("~/.pw_butler/db.ini")
 CRED_TABLE = "credential"
@@ -61,6 +62,22 @@ class DatabaseApplication(ABC):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self._database.close()
+
+    @contextmanager
+    def session_factory(self, session=None):
+        """Return either externally provided or newly created session"""
+        created = False
+        if session is None:
+            session = self._database.Session()
+            created = True
+        try:
+            yield session
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            if created:
+                session.close()
 
 
 class Database:
