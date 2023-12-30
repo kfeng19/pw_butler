@@ -1,8 +1,10 @@
+import logging
+from getpass import getpass
+
 import click
 
-from butler.authentication import initialize, authenticate
 from butler.app import Butler
-
+from butler.authentication import authenticate, initialize
 from butler.database import DBCat
 
 
@@ -32,6 +34,10 @@ def pw_option(func):
 @pw_option
 def init(password):
     """Initialize a root password for authentication"""
+    pw2 = getpass(prompt="Please type your password again: ").encode()
+    if password != pw2:
+        logging.error("Passwords don't match!")
+        return
     initialize(password)
 
 
