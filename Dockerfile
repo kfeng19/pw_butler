@@ -1,3 +1,9 @@
-FROM postgres
-COPY pw.sql /docker-entrypoint-initdb.d/
-# DB credentials are specified when container is started
+FROM python:3.12-slim
+
+WORKDIR /usr/src/app
+
+COPY . .
+
+RUN pip install .
+
+ENTRYPOINT ["bash"]

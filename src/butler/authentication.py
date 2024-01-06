@@ -12,7 +12,7 @@ def initialize(pw: bytes, auth_file=AUTH_PATH) -> None:
     """Initialize the authentication file"""
     if os.path.isfile(auth_file):
         warnings.warn("Authentication file already exists", RuntimeWarning)
-        go = input("Proceed? (y/n)")
+        go = input("Overwrite? (y/n)")
         if go.lower() != "y":
             print("Canceling")
             return

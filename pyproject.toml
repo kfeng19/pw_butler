@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "pw-butler"
 dynamic = ["version"]
 description = 'A local password management system'
-readme = "README.md"
+readme = "readme.md"
 requires-python = ">=3.8"
 license = "MIT"
 keywords = []

@@ -33,7 +33,7 @@ def cli():
 
 @click.command()
 def init():
-    """Initialize a root password for authentication and encryption"""
+    """Initialize a root password for authentication / encryption and configure database credentials"""
     password = getpass("Please enter root password: ").encode()
     pw2 = getpass(prompt="Please type your password again: ").encode()
     if password != pw2:
