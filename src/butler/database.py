@@ -7,6 +7,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Union
 
+import pandas as pd
 import sqlalchemy as sa
 from sqlalchemy import Connection, MetaData, insert, select
 from sqlalchemy.engine import URL
@@ -19,7 +20,7 @@ CRED_TABLE = "credential"
 HOST_KEY = "host"
 DB_NAME_KEY = "db_name"
 DB_USER_KEY = "user"
-DB_PW_KEY = "password"
+DB_PW_FILE = "password"
 DB_PORT_KEY = "port"
 
 SITE_KEY = "app_site"
@@ -32,9 +33,9 @@ INI_SECTION = "DEFAULT"
 
 
 def config_db(
-    db_name: str,
-    user: str,
     password: str,
+    db_name: str = "postgres",
+    user: str = "postgres",
     host: str = "localhost",
     port: int = 5432,
     config_dir: str | os.PathLike = DB_CONF_PATH,
@@ -51,20 +52,16 @@ def config_db(
     config[INI_SECTION] = {
         HOST_KEY: host,
         DB_PORT_KEY: str(port),
+        DB_NAME_KEY: db_name,
+        DB_USER_KEY: user,
     }
     _dir = Path(config_dir)
     with open(_dir / INI_NAME, "w") as f:
         config.write(f)
     os.chmod(_dir / INI_NAME, 0o640)
-    with open(_dir / DB_NAME_KEY, "w") as f:
-        f.write(db_name)
-    os.chmod(_dir / DB_NAME_KEY, 0o640)
-    with open(_dir / DB_USER_KEY, "w") as f:
-        f.write(user)
-    os.chmod(_dir / DB_USER_KEY, 0o640)
-    with open(_dir / DB_PW_KEY, "w") as f:
+    with open(_dir / DB_PW_FILE, "w") as f:
         f.write(password)
-    os.chmod(_dir / DB_PW_KEY, 0o640)
+    os.chmod(_dir / DB_PW_FILE, 0o640)
     return True
 
 
@@ -111,14 +108,14 @@ class Database:
         parser = ConfigParser()
         _dir = Path(config_dir)
         parser.read(_dir / INI_NAME)
-        with open(_dir / DB_PW_KEY, "r") as f:
+        with open(_dir / DB_PW_FILE, "r") as f:
             db_pw = f.read()
         url = URL.create(
             drivername="postgresql+psycopg",
             host=parser.get(INI_SECTION, HOST_KEY),
             port=parser.getint(INI_SECTION, DB_PORT_KEY),
-            database="postgres",
-            username="postgres",
+            database=parser.get(INI_SECTION, DB_NAME_KEY),
+            username=parser.get(INI_SECTION, DB_USER_KEY),
             password=db_pw,
         )
         self.engine = sa.create_engine(url)  # An engine for connection
@@ -165,8 +162,14 @@ class Database:
     def get_all_sites(self, conn: Union[Session, Connection]) -> list:
         """Obtain all site tokens in database"""
         stmt = select(self._cred_table.c.app_site)
-        rows = conn.execute(stmt).all()
-        return [row[0] for row in rows]
+        return list(conn.scalars(stmt).all())
+
+    def get_uname(self, sess: Session, site: str) -> pd.DataFrame:
+        """Obtain username for site"""
+        query = select(self._cred_table.c.username, self._cred_table.c.salt).where(
+            site == self._cred_table.c.app_site
+        )
+        return pd.read_sql(query, sess.get_bind())
 
     def add(self, conn: Union[Session, Connection], entry: dict):
         """Add one entry"""
@@ -174,7 +177,6 @@ class Database:
             select(self._cred_table)
             .where(entry[SITE_KEY] == self._cred_table.c.app_site)
             .where(entry[UNAME_KEY] == self._cred_table.c.username)
-            .where(entry[PW_KEY] == self._cred_table.c.password)
         )
         if len(conn.execute(query).all()):
             raise ValueError("Entry already exists!")

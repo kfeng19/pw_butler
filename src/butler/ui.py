@@ -46,12 +46,10 @@ def init():
         logging.error("Passwords don't match!")
         return
     initialize(password)
-    db_name = "".join(secrets.choice(string.ascii_lowercase) for _ in range(8))
-    user = "".join(secrets.choice(string.ascii_lowercase) for _ in range(6))
     db_pw = "".join(
         secrets.choice(string.ascii_letters + string.digits) for _ in range(10)
     )
-    if config_db(db_name=db_name, user=user, password=db_pw):
+    if config_db(password=db_pw):
         logging.info("Database configured")
     else:
         logging.error("Failed to configure database")
@@ -95,6 +93,31 @@ def add(password):
         return
     with Butler(password) as app:
         app.add(site_name, username, user_pw)
+
+
+@cli.group()
+def get():
+    """Retrieve credentials for a site / app"""
+    pass
+
+
+@get.command()
+@click.argument("site")
+@authenticate
+def uname(password, site):
+    """Retrieve username"""
+    with Butler(password) as app:
+        unames = app.retrieve_uname(site)
+    logging.info(f"Usernames for {site}")
+    for name in unames:
+        print(name)
+
+
+@get.command()
+@authenticate
+def pword(password):
+    """Retrieve password"""
+    click.echo("hey")
 
 
 cli.add_command(add)

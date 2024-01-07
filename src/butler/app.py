@@ -1,5 +1,4 @@
 import logging
-import typing
 
 from butler.database import (
     DB_CONF_PATH,
@@ -9,7 +8,7 @@ from butler.database import (
     UNAME_KEY,
     DatabaseApplication,
 )
-from butler.util import encrypt_with_salt, encrypt_wrapper
+from butler.util import decrypt_with_salt, encrypt_with_salt, encrypt_wrapper
 
 
 class Butler(DatabaseApplication):
@@ -22,13 +21,22 @@ class Butler(DatabaseApplication):
         super().__init__(db_dir)
         self._root_pw = password
 
-    @typing.no_type_check
-    def retrieve_uname(self) -> bytes:
-        pass
+    def retrieve_uname(self, site_name: str) -> list:
+        """Obtain usernames for a site / app"""
+        with self.session_factory() as sess:
+            tokens = self._database.get_uname(sess, site_name)
+        unames = []
+        for i in tokens.index:
+            unames.append(
+                decrypt_with_salt(
+                    self._root_pw, tokens[SALT_KEY][i], tokens[UNAME_KEY][i]
+                ).decode()
+            )
+        return unames
 
     def retrieve_all(self) -> list:
         """Obtain all apps / sites"""
-        with self._database.Session() as sess:
+        with self.session_factory() as sess:
             sites = self._database.get_all_sites(sess)
         return sites
 

@@ -2,6 +2,8 @@ import pytest
 from sqlalchemy import select
 
 from butler.app import Butler
+from butler.database import SALT_KEY, UNAME_KEY
+from butler.util import decrypt_with_salt
 
 from .conftest import ROOT_PW, SITE_NAME, random_raw
 
@@ -15,6 +17,13 @@ def get_butler(populate_db, get_db_config):
 def test_retrieve_all(get_butler, prepare_data):
     all_sites = get_butler.retrieve_all()
     assert all_sites == [SITE_NAME]
+
+
+def test_retrieve_uname(get_butler, prepare_data):
+    unames = get_butler.retrieve_uname(SITE_NAME)
+    uname_token = prepare_data[UNAME_KEY].encode()
+    uname = decrypt_with_salt(ROOT_PW, prepare_data[SALT_KEY], uname_token)
+    assert unames == [uname.decode()]
 
 
 def test_add(get_butler, get_session, populate_db):
