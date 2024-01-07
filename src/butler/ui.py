@@ -3,8 +3,10 @@ import logging
 import secrets
 import string
 from getpass import getpass
+from importlib import resources
 
 import click
+from python_on_whales import DockerClient
 
 from butler.app import Butler
 from butler.authentication import initialize, verify_password
@@ -24,6 +26,10 @@ def authenticate(func):
             logging.error("Wrong password :(")
 
     return wrapper
+
+
+def get_docker():
+    return DockerClient(compose_files=[resources.files() / "docker-compose.yml"])
 
 
 @click.group()
@@ -51,6 +57,20 @@ def init():
         logging.error("Failed to configure database")
 
 
+@click.command
+def up():
+    """Start up backend services for CLI"""
+    docker = get_docker()
+    docker.compose.up(detach=True)
+
+
+@click.command
+def down():
+    """Stop backend services"""
+    docker = get_docker()
+    docker.compose.down()
+
+
 @click.command()
 @authenticate
 def ls(password):
@@ -69,6 +89,10 @@ def add(password):
     site_name = input("App / site name: ")
     username = input("Username: ")
     user_pw = getpass("Password: ")
+    pw2 = getpass("Please type in the password again: ")
+    if pw2 != user_pw:
+        logging.error("Passwords don't match!")
+        return
     with Butler(password) as app:
         app.add(site_name, username, user_pw)
 
@@ -76,3 +100,5 @@ def add(password):
 cli.add_command(add)
 cli.add_command(init)
 cli.add_command(ls)
+cli.add_command(up)
+cli.add_command(down)

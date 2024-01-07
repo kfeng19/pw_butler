@@ -1,7 +1,6 @@
 import logging
 import os
 import pickle
-import warnings
 
 from butler.util import derive_key, hash_pw
 
@@ -11,7 +10,7 @@ AUTH_PATH = os.path.expanduser("~/.pw_butler/auth.bin")
 def initialize(pw: bytes, auth_file=AUTH_PATH) -> None:
     """Initialize the authentication file"""
     if os.path.isfile(auth_file):
-        warnings.warn("Authentication file already exists", RuntimeWarning)
+        logging.warning("Authentication file already exists")
         go = input("Overwrite? (y/n)")
         if go.lower() != "y":
             print("Canceling")

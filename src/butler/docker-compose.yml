@@ -4,24 +4,18 @@ services:
     restart: on-failure:5
     environment:
       POSTGRES_PASSWORD_FILE: /run/secrets/db_password
-      POSTGRES_USER_FILE: /run/secrets/db_user
-      POSTGRES_DB_FILE: /run/secrets/db_name
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
     volumes:
-      - test_vol:/var/lib/postgresql/data
+      - db:/var/lib/postgresql/data
       - ./pw.sql:/docker-entrypoint-initdb.d/pw.sql
     ports:
       - 5432:5432
     secrets:
-      - db_name
       - db_password
-      - db_user
 volumes:
-  test_vol:
+  db:
 
 secrets:
   db_password:
     file: ~/.pw_butler/db/password
-  db_user:
-    file: ~/.pw_butler/db/user
-  db_name:
-    file: ~/.pw_butler/db/db_name

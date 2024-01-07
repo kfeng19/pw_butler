@@ -1,7 +1,6 @@
 import logging
 import os
 import time
-import warnings
 from abc import ABC
 from configparser import ConfigParser
 from contextlib import contextmanager
@@ -41,8 +40,9 @@ def config_db(
     config_dir: str | os.PathLike = DB_CONF_PATH,
 ) -> bool:
     """Initialize the DB config file"""
+    os.makedirs(config_dir, exist_ok=True)
     if len(os.listdir(config_dir)) > 0:
-        warnings.warn("Database config exists!")
+        logging.warning("Database config exists!")
         user_input = input("Overwrite? (y/n): ")
         if user_input.lower() != "y":
             logging.info("Canceled")
@@ -111,18 +111,14 @@ class Database:
         parser = ConfigParser()
         _dir = Path(config_dir)
         parser.read(_dir / INI_NAME)
-        with open(_dir / DB_NAME_KEY, "r") as f:
-            db_name = f.read()
-        with open(_dir / DB_USER_KEY, "r") as f:
-            db_user = f.read()
         with open(_dir / DB_PW_KEY, "r") as f:
             db_pw = f.read()
         url = URL.create(
             drivername="postgresql+psycopg",
             host=parser.get(INI_SECTION, HOST_KEY),
             port=parser.getint(INI_SECTION, DB_PORT_KEY),
-            database=db_name,
-            username=db_user,
+            database="postgres",
+            username="postgres",
             password=db_pw,
         )
         self.engine = sa.create_engine(url)  # An engine for connection
