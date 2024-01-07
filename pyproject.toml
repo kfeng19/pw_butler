@@ -28,7 +28,8 @@ dependencies = [
   "psycopg",
   "sqlalchemy",
   "cryptography",
-  "click"
+  "click",
+  "python-on-whales"
 ]
 
 [project.urls]
