@@ -1,9 +1,9 @@
 import pandas as pd
 from pytest import raises
 
-from butler.database import SALT_KEY, SITE_KEY, UNAME_KEY
+from butler.database import PW_KEY, SALT_KEY, SITE_KEY, UNAME_KEY
 
-from .conftest import random_data
+from .conftest import SITE_NAME, random_data
 
 
 def test_get_salt(prepare_data, populate_db, get_session):
@@ -25,6 +25,14 @@ def test_get_uname(prepare_data, populate_db, get_session):
     )
     uname = populate_db.get_uname(get_session, prepare_data[SITE_KEY])
     assert expected.equals(uname)
+
+
+def test_get_pw(prepare_data, populate_db, get_session):
+    expected_token = prepare_data[PW_KEY]
+    expected_salt = prepare_data[SALT_KEY]
+    result = populate_db.get_pw(get_session, SITE_NAME, prepare_data[UNAME_KEY])
+    assert expected_salt == getattr(result, SALT_KEY)
+    assert expected_token == getattr(result, PW_KEY)
 
 
 def test_add_duplicate(prepare_data, populate_db, get_session):

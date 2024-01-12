@@ -6,6 +6,7 @@ from getpass import getpass
 from importlib import resources
 
 import click
+import pyperclip  # type: ignore
 from python_on_whales import DockerClient
 
 from butler.app import Butler
@@ -108,16 +109,24 @@ def uname(password, site):
     """Retrieve username"""
     with Butler(password) as app:
         unames = app.retrieve_uname(site)
-    logging.info(f"Usernames for {site}")
-    for name in unames:
-        print(name)
+    if not unames:
+        logging.error(f"No entry found for {site}")
+    else:
+        logging.info(f"Usernames for {site}")
+        for name in unames:
+            print(name)
 
 
 @get.command()
+@click.argument("site")
+@click.argument("username")
 @authenticate
-def pword(password):
-    """Retrieve password"""
-    click.echo("hey")
+def pword(password, site, username):
+    """Retrieve password for a site and username"""
+    with Butler(password) as app:
+        site_pword = app.retrieve_pword(site, username)
+    pyperclip.copy(site_pword)
+    logging.info("Password copied to clip board!")
 
 
 cli.add_command(add)

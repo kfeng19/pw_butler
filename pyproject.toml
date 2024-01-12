@@ -29,7 +29,9 @@ dependencies = [
   "sqlalchemy",
   "cryptography",
   "click",
-  "python-on-whales"
+  "python-on-whales",
+  "pyperclip",
+  "pandas"
 ]
 
 [project.urls]

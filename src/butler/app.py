@@ -1,5 +1,7 @@
 import logging
 
+from pandas import DataFrame
+
 from butler.database import (
     DB_CONF_PATH,
     PW_KEY,
@@ -24,7 +26,7 @@ class Butler(DatabaseApplication):
     def retrieve_uname(self, site_name: str) -> list:
         """Obtain usernames for a site / app"""
         with self.session_factory() as sess:
-            tokens = self._database.get_uname(sess, site_name)
+            tokens: DataFrame = self._database.get_uname(sess, site_name)
         unames = []
         for i in tokens.index:
             unames.append(
@@ -33,6 +35,29 @@ class Butler(DatabaseApplication):
                 ).decode()
             )
         return unames
+
+    def retrieve_pword(self, site_name: str, uname: str) -> str:
+        """Obtain password for site and username"""
+        with self.session_factory() as sess:
+            uname_tokens: DataFrame = self._database.get_uname(sess, site_name)
+            for i in uname_tokens.index:
+                if (
+                    uname
+                    == decrypt_with_salt(
+                        self._root_pw,
+                        uname_tokens[SALT_KEY][i],
+                        uname_tokens[UNAME_KEY][i],
+                    ).decode()
+                ):
+                    result = self._database.get_pw(
+                        sess, site_name, uname_tokens[UNAME_KEY][i]
+                    )
+                    return decrypt_with_salt(
+                        self._root_pw,
+                        getattr(result, SALT_KEY),
+                        getattr(result, PW_KEY),
+                    ).decode()
+        raise ValueError(f"Username {uname} not found for {site_name}")
 
     def retrieve_all(self) -> list:
         """Obtain all apps / sites"""

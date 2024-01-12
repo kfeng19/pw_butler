@@ -10,7 +10,7 @@ from typing import Any, Union
 import pandas as pd
 import sqlalchemy as sa
 from sqlalchemy import Connection, MetaData, insert, select
-from sqlalchemy.engine import URL
+from sqlalchemy.engine import URL, Row
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -148,10 +148,10 @@ class Database:
             raise KeyError(f"Didn't find {CRED_TABLE} in database!")
         self._cred_table = meta.tables[CRED_TABLE]
 
-    def get_salt(self, conn: Union[Session, Connection], site_token: str) -> bytes:
+    def get_salt(self, conn: Union[Session, Connection], site: str) -> bytes:
         """Get the salt for a specific site token"""
         stmt = select(self._cred_table.c.salt).where(
-            self._cred_table.c.app_site == site_token
+            self._cred_table.c.app_site == site
         )
         rows = conn.execute(stmt).all()
         n = len(rows)
@@ -170,6 +170,17 @@ class Database:
             site == self._cred_table.c.app_site
         )
         return pd.read_sql(query, sess.get_bind())
+
+    def get_pw(
+        self, sess: Union[Session, Connection], site: str, uname_token: str
+    ) -> Row:
+        """Obtain password for site and username"""
+        query = (
+            select(self._cred_table.c.password, self._cred_table.c.salt)
+            .where(site == self._cred_table.c.app_site)
+            .where(uname_token == self._cred_table.c.username)
+        )
+        return sess.execute(query).one()
 
     def add(self, conn: Union[Session, Connection], entry: dict):
         """Add one entry"""

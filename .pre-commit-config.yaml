@@ -15,7 +15,7 @@ repos:
     rev: 6.1.0
     hooks:
     -   id: flake8
-        args: [--ignore=E501]
+        args: [--extend-ignore=E501]
 -   repo: local
     hooks:
     -   id: mypy
