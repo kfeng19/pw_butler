@@ -75,7 +75,8 @@ def populate_db(obtain_db, prepare_data):
 
 
 # Bind session to an external connection
-# See https://docs.sqlalchemy.org/en/20/orm/session_transaction.html#joining-a-session-into-an-external-transaction-such-as-for-test-suites
+# https://docs.sqlalchemy.org/en/20/orm/session_transaction.html#joining-a-
+# session-into-an-external-transaction-such-as-for-test-suites
 @pytest.fixture
 def get_session(obtain_db):
     with obtain_db.engine.connect() as conn:

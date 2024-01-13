@@ -7,7 +7,7 @@ name = "pw-butler"
 dynamic = ["version"]
 description = 'A local password management system'
 readme = "readme.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 license = "MIT"
 keywords = []
 authors = [
