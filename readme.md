@@ -2,30 +2,46 @@ Password Butler
 ===
 A password manager on local host.
 
+Dependencies
+---
+Password Butler (referred to as Butler below) depends on Docker for database hosting,
+so please install Docker before using it.
+
+Butler supports Python 3.10 and up.
+
+Installation
+---
+You can install Butler like any other Python packages.
+Create a fresh virtual environment using your favorite tool such as Conda or venv.
+Install Butler with:
+```commandline
+pip install .
+```
+
 Usage
 ---
-The first step is to have the database ready.
-The easiest way to achieve this is through docker-compose:
+Butler has a simple command line interface. Simply type
 ```commandline
-docker-compose up
+butler
 ```
-This will create a persistent database.
-When you are done with the tool, simply stop everything with
-```
-docker-compose down
-```
-
-Alternatively, you may build a custom image with the Dockerfile and start the database container manually:
+And you will get a list of available commands.
+For first time use, you want to start with
 ```commandline
-docker run -d --name db_server \
-    -e POSTGRES_DB=pw_db
-    -e POSTGRES_PASSWORD=mysecretpassword \
-    -v pw_vol:/var/lib/postgresql/data \
-    pw_image
+butler init
 ```
-Here `pw_image` is the name of the image built with our Dockerfile.
+And the CLI will guide you through setting up your root password and configuring
+the database.
 
-As long as the same volume is used, database initialization will be skipped for new containers.
+Every time before using Butler, you have to first fire up the backend service with
+```commandline
+butler up
+```
+Then you may use any available commands such as `butler add` and `butler get`.
+When you are done, please remember to issue
+```commandline
+butler down
+```
+to shut down the backend service.
 
 References
 ---
