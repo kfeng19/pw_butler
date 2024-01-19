@@ -1,5 +1,6 @@
 import functools
 import logging
+import os
 import secrets
 import string
 from getpass import getpass
@@ -7,10 +8,11 @@ from importlib import resources
 
 import click
 import pyperclip  # type: ignore
-from python_on_whales import DockerClient
+from python_on_whales import DockerClient, docker
+from python_on_whales.exceptions import NoSuchVolume
 
 from butler.app import Butler
-from butler.authentication import initialize, verify_password
+from butler.authentication import AUTH_PATH, initialize, verify_password
 from butler.database import config_db
 
 
@@ -40,13 +42,27 @@ def cli():
 
 @click.command()
 def init():
-    """Initialize a root password for authentication / encryption and configure database credentials"""
+    """Initialize a root password for authentication / encryption and initialize database"""
+    if os.path.isfile(AUTH_PATH):
+        logging.warning("Authentication file already exists.")
+        go = input("Overwrite? (this would erase any old password data) (y/n): ")
+        if go.lower() != "y":
+            print("Canceling")
+            return
     password = getpass("Please enter root password: ").encode()
     pw2 = getpass(prompt="Please type your password again: ").encode()
     if password != pw2:
         logging.error("Passwords don't match!")
         return
     initialize(password)
+    # Drop any existing db volume
+    try:
+        db_vol = docker.volume.inspect("butler_db")
+        logging.info("Erasing old data.")
+        db_vol.remove()
+    except NoSuchVolume:
+        pass
+    # Config new db
     db_pw = "".join(
         secrets.choice(string.ascii_letters + string.digits) for _ in range(10)
     )

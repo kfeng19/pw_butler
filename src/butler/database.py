@@ -1,4 +1,3 @@
-import logging
 import os
 import time
 from abc import ABC
@@ -42,12 +41,6 @@ def config_db(
 ) -> bool:
     """Initialize the DB config file"""
     os.makedirs(config_dir, exist_ok=True)
-    if len(os.listdir(config_dir)) > 0:
-        logging.warning("Database config exists!")
-        user_input = input("Overwrite? (y/n): ")
-        if user_input.lower() != "y":
-            logging.info("Canceled")
-            return False
     config = ConfigParser()
     config[INI_SECTION] = {
         HOST_KEY: host,
