@@ -9,7 +9,7 @@ from importlib import resources
 import click
 import pyperclip  # type: ignore
 from python_on_whales import DockerClient, docker
-from python_on_whales.exceptions import NoSuchVolume
+from python_on_whales.exceptions import NoSuchContainer, NoSuchVolume
 
 from butler.app import Butler
 from butler.authentication import AUTH_PATH, initialize, verify_password
@@ -33,6 +33,15 @@ def authenticate(func):
 
 def get_docker():
     return DockerClient(compose_files=[resources.files() / "docker-compose.yml"])
+
+
+def check_status():
+    """Check the status of docker service"""
+    try:
+        docker.container.inspect("butler-db-1")
+        logging.info("Service running.")
+    except NoSuchContainer:
+        logging.info("Service not running.")
 
 
 @click.group()
@@ -110,6 +119,12 @@ def add(password):
         return
     with Butler(password) as app:
         app.add(site_name, username, user_pw)
+
+
+@cli.command
+def status():
+    """Check whether background service is running"""
+    check_status()
 
 
 @cli.group()
