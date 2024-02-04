@@ -15,6 +15,8 @@ from butler.app import Butler
 from butler.authentication import AUTH_PATH, initialize, verify_password
 from butler.database import config_db
 
+DB_CONTAINER = "butler-db-1"
+
 
 def authenticate(func):
     """A decorator to request and authenticate a password"""
@@ -35,13 +37,21 @@ def get_docker():
     return DockerClient(compose_files=[resources.files() / "docker-compose.yml"])
 
 
-def check_status():
-    """Check the status of docker service"""
-    try:
-        docker.container.inspect("butler-db-1")
-        logging.info("Service running.")
-    except NoSuchContainer:
-        logging.info("Service not running.")
+def check_status(func):
+    """A decorator to check the status of docker service"""
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            docker.container.inspect(DB_CONTAINER)
+            logging.info("Service running.")
+            return func(*args, **kwargs)
+        except NoSuchContainer:
+            logging.error(
+                "Background service not running. See help page for more info."
+            )
+
+    return wrapper
 
 
 @click.group()
@@ -84,18 +94,24 @@ def init():
 @click.command
 def up():
     """Start up backend services for CLI"""
-    docker = get_docker()
-    docker.compose.up(detach=True)
+    try:
+        docker.container.inspect(DB_CONTAINER)
+        logging.info("Service already running.")
+    except NoSuchContainer:
+        my_docker = get_docker()
+        my_docker.compose.up(detach=True)
 
 
 @click.command
+@check_status
 def down():
     """Stop backend services"""
-    docker = get_docker()
-    docker.compose.down()
+    my_docker = get_docker()
+    my_docker.compose.down()
 
 
 @click.command()
+@check_status
 @authenticate
 def ls(password):
     """List all apps / sites"""
@@ -107,6 +123,7 @@ def ls(password):
 
 
 @click.command()
+@check_status
 @authenticate
 def add(password):
     """Add a new credential"""
@@ -122,9 +139,10 @@ def add(password):
 
 
 @cli.command
+@check_status
 def status():
     """Check whether background service is running"""
-    check_status()
+    pass
 
 
 @cli.group()
@@ -135,6 +153,7 @@ def get():
 
 @get.command()
 @click.argument("site")
+@check_status
 @authenticate
 def uname(password, site):
     """Retrieve username"""
@@ -151,6 +170,7 @@ def uname(password, site):
 @get.command()
 @click.argument("site")
 @click.argument("username")
+@check_status
 @authenticate
 def pword(password, site, username):
     """Retrieve password for a site and username"""
