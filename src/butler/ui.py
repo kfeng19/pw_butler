@@ -26,7 +26,7 @@ def authenticate(func):
         password = getpass("Please enter root password: ").encode()
         if verify_password(password):
             logging.info("Authenticated")
-            return func(password, *args, **kwargs)
+            func(password, *args, **kwargs)
         else:
             logging.error("Wrong password :(")
 
@@ -45,7 +45,7 @@ def check_status(func):
         try:
             docker.container.inspect(DB_CONTAINER)
             logging.info("Service running.")
-            return func(*args, **kwargs)
+            func(*args, **kwargs)
         except NoSuchContainer:
             logging.error(
                 "Background service not running. See help page for more info."
