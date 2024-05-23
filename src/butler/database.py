@@ -8,7 +8,7 @@ from typing import Any, Union
 
 import pandas as pd
 import sqlalchemy as sa
-from sqlalchemy import Connection, MetaData, insert, select
+from sqlalchemy import Connection, MetaData, delete, insert, select
 from sqlalchemy.engine import URL, Row
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session, sessionmaker
@@ -187,3 +187,21 @@ class Database:
         stmt = insert(self._cred_table).values(**entry)
         conn.execute(stmt)
         conn.commit()
+
+    def remove(self, conn: Session | Connection, site: str, uname: str):
+        """Remove one entry"""
+        query = (
+            select(self._cred_table)
+            .where(site == self._cred_table.c.app_site)
+            .where(uname == self._cred_table.c.username)
+        )
+        if len(conn.execute(query).all()):
+            stmt = (
+                delete(self._cred_table)
+                .where(site == self._cred_table.c.app_site)
+                .where(uname == self._cred_table.c.username)
+            )
+            conn.execute(stmt)
+            conn.commit()
+        else:
+            raise ValueError("Entry doesn't exist!")

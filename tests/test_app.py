@@ -5,7 +5,7 @@ from butler.app import Butler
 from butler.database import PW_KEY, SALT_KEY, UNAME_KEY
 from butler.util import decrypt_with_salt
 
-from .conftest import ROOT_PW, SITE_NAME, random_raw
+from .conftest import ROOT_PW, SITE_NAME, UNAME_RAW_KEY, random_raw
 
 
 @pytest.fixture(scope="module")
@@ -42,3 +42,11 @@ def test_add(get_butler, get_session, populate_db):
     stmt = select(table).where(table.c.app_site == site)
     rows = get_session.execute(stmt).all()
     assert len(rows) == 1
+
+
+def test_remove(get_butler, get_session, prepare_data, populate_db):
+    get_butler.remove(SITE_NAME, prepare_data[UNAME_RAW_KEY], get_session)
+    table = populate_db._cred_table
+    stmt = select(table).where(table.c.app_site == SITE_NAME)
+    rows = get_session.execute(stmt).all()
+    assert len(rows) == 0
