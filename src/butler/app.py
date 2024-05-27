@@ -80,3 +80,21 @@ class Butler(DatabaseApplication):
                 },
             )
         logging.info("Entry added.")
+
+    def remove(self, site_name: str, username: str, session=None) -> None:
+        """Remove one entry"""
+        with self.session_factory(session) as sess:
+            uname_tokens: DataFrame = self._database.get_uname(sess, site_name)
+            for i in uname_tokens.index:
+                if (
+                    username
+                    == decrypt_with_salt(
+                        self._root_pw,
+                        uname_tokens[SALT_KEY][i],
+                        uname_tokens[UNAME_KEY][i],
+                    ).decode()
+                ):
+                    self._database.remove(sess, site_name, uname_tokens[UNAME_KEY][i])
+                    logging.info("Entry removed.")
+                    return
+            logging.error(f"Username {username} not found!")

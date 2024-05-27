@@ -138,6 +138,17 @@ def add(password):
         app.add(site_name, username, user_pw)
 
 
+@click.command
+@check_status
+@authenticate
+def remove(password):
+    """Remove an entry in database"""
+    site_name = input("App / site name: ")
+    username = input("Username: ")
+    with Butler(password) as app:
+        app.remove(site_name, username)
+
+
 @cli.command
 @check_status
 def status():
@@ -185,3 +196,4 @@ cli.add_command(init)
 cli.add_command(ls)
 cli.add_command(up)
 cli.add_command(down)
+cli.add_command(remove)

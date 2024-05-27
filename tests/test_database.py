@@ -1,9 +1,10 @@
 import pandas as pd
 from pytest import raises
+from sqlalchemy import select
 
 from butler.database import PW_KEY, SALT_KEY, SITE_KEY, UNAME_KEY
 
-from .conftest import SITE_NAME, random_data
+from .conftest import SITE_NAME, get_db_data, random_data
 
 
 def test_get_salt(prepare_data, populate_db, get_session):
@@ -37,11 +38,22 @@ def test_get_pw(prepare_data, populate_db, get_session):
 
 def test_add_duplicate(prepare_data, populate_db, get_session):
     with raises(ValueError, match="exists"):
-        populate_db.add(get_session, prepare_data)
+        populate_db.add(get_session, get_db_data(prepare_data))
 
 
 def test_add(populate_db, get_session):
     data = random_data()
-    populate_db.add(get_session, data)
+    populate_db.add(get_session, get_db_data(data))
     salt = populate_db.get_salt(get_session, data[SITE_KEY])
     assert salt == data[SALT_KEY]
+
+
+def test_remove(populate_db, get_session, prepare_data):
+    populate_db.remove(get_session, prepare_data[SITE_KEY], prepare_data[UNAME_KEY])
+    query = (
+        select(populate_db._cred_table)
+        .where(prepare_data[SITE_KEY] == populate_db._cred_table.c.app_site)
+        .where(prepare_data[UNAME_KEY] == populate_db._cred_table.c.username)
+    )
+    res = get_session.execute(query).all()
+    assert len(res) == 0, "Entry still exists!"

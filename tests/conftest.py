@@ -12,6 +12,8 @@ from butler.util import encrypt_with_salt
 
 ROOT_PW = b"root_password"
 SITE_NAME = "times"
+UNAME_RAW_KEY = "uname_raw"
+PW_RAW_KEY = "pw_raw"
 
 
 @pytest.fixture(scope="session")
@@ -57,7 +59,14 @@ def random_data(site=None):
         UNAME_KEY: uname_token.decode(),
         PW_KEY: pw_token.decode(),
         SITE_KEY: site,
+        UNAME_RAW_KEY: username,
+        PW_RAW_KEY: pw,
     }
+
+
+def get_db_data(data: dict) -> dict:
+    """Extract data only contained in database"""
+    return {k: data[k] for k in [SALT_KEY, UNAME_KEY, PW_KEY, SITE_KEY]}
 
 
 @pytest.fixture(scope="session")
@@ -67,7 +76,7 @@ def prepare_data():
 
 @pytest.fixture(scope="session")
 def populate_db(obtain_db, prepare_data):
-    stmt = insert(obtain_db._cred_table).values(**prepare_data)
+    stmt = insert(obtain_db._cred_table).values(**get_db_data(prepare_data))
     with obtain_db.Session() as sess:
         with sess.begin():
             sess.execute(stmt)
