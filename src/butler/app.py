@@ -59,11 +59,11 @@ class Butler(DatabaseApplication):
                     ).decode()
         raise ValueError(f"Username {uname} not found for {site_name}")
 
-    def retrieve_all(self) -> list:
+    def retrieve_all(self, sort=True) -> list:
         """Obtain all apps / sites"""
         with self.session_factory() as sess:
             sites = self._database.get_all_sites(sess)
-        return sites
+        return sorted(sites, key=str.casefold) if sort else sites
 
     def add(self, site_name: str, username: str, password: str, session=None) -> None:
         """Add one entry"""
