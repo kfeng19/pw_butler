@@ -57,7 +57,7 @@ class Butler(DatabaseApplication):
                         getattr(result, SALT_KEY),
                         getattr(result, PW_KEY),
                     ).decode()
-        raise ValueError(f"Username {uname} not found for {site_name}")
+        return ""
 
     def retrieve_all(self, sort=True) -> list:
         """Obtain all apps / sites"""
