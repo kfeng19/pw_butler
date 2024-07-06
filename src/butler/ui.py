@@ -187,8 +187,11 @@ def pword(password, site, username):
     """Retrieve password for a site and username"""
     with Butler(password) as app:
         site_pword = app.retrieve_pword(site, username)
-    pyperclip.copy(site_pword)
-    logging.info("Password copied to clip board!")
+    if not site_pword:
+        logging.error(f"No entry found for site {site} and username {username}.")
+    else:
+        pyperclip.copy(site_pword)
+        logging.info("Password copied to clip board!")
 
 
 cli.add_command(add)
